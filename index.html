@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1a2e">
-<title>Scale Degree Trainer - Piano v9.0.0</title>
+<title>Scale Degree Trainer - Piano v9.0.1</title>
 <style>
-/* STILI ORIGINALI + NUOVI PER IL LAYOUT */
+/* ... CSS (Invariato) ... */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--primary-color:#4a90e2;--secondary-color:#7b68ee;--success-color:#4caf50;--error-color:#f44336;--bg-dark:#1a1a2e;--bg-card:#16213e;--text-primary:#fff;--text-secondary:#a0a0a0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;background:linear-gradient(135deg,var(--bg-dark) 0%,#0f3460 100%);color:var(--text-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -35,7 +35,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .btn-primary{padding:16px 34px;background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));border:none;border-radius:12px;color:#fff;font-size:1.1rem;font-weight:600;cursor:pointer;transition:.3s;box-shadow:0 4px 15px rgba(74,144,226,.4)}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(74,144,226,.6)}
 .btn-primary:active{transform:translateY(0)}
-.sensitivity-controls{width:100%;max-width:420px;background:var(--bg-card);padding:20px;border-radius:12px;margin:0 auto 10px;}
+.sensitivity-controls{width:100%;max-width:500px;background:var(--bg-card);padding:20px;border-radius:12px;margin:0 auto 10px;}
 .slider-group{margin-bottom:16px}
 .slider-label{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.95rem;color:var(--text-secondary)}
 .slider-value{color:var(--primary-color);font-weight:700}
@@ -71,26 +71,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .sticky-footer{position:sticky;bottom:0;z-index:2}
 .small{font-size:.9rem;opacity:.8}
 @media (max-width:768px){#setupScreen h1{font-size:2rem}.degree-question{font-size:2.2rem}.score-breakdown{grid-template-columns:1fr}}
-
-.result-details strong {
-    display: block;
-    font-size: 2.6rem;
-    line-height: 1.1;
-    color: #ffffff;
-    margin-bottom: 6px;
-}
-@media (max-width: 480px) {
-    .result-details strong {
-        font-size: 2.2rem;
-    }
-}
+.result-details strong { display: block; font-size: 2.6rem; line-height: 1.1; color: #ffffff; margin-bottom: 6px; }
+@media (max-width: 480px) { .result-details strong { font-size: 2.2rem; } }
 </style>
 </head>
 <body>
 <div class="container">
   <div id="setupScreen" class="screen active">
     <h1>🎹 Scale Degree Trainer</h1>
-    <div class="version-badge" id="versionBadge">v9.0.0</div> 
+    <div class="version-badge" id="versionBadge">v9.0.1</div> 
     <p class="subtitle">Impara i gradi delle scale e dei modi</p>
 
     <div class="setup-section">
@@ -128,7 +117,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
     <div id="mobileWarning" class="info-box warning-box" style="display:none;max-width:450px;margin-bottom:20px;">
       <h3>⚠️ iPhone/iPad rilevato</h3>
-      <p>Apri **Calibrazione** e abbassa “Volume Minimo” se non rileva la frequenza.</p>
+      <p>Se il volume è basso, vai in Calibrazione e alza "Input Boost".</p>
     </div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
@@ -154,7 +143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     </div>
     <div class="info-box" style="max-width:720px;margin:0 auto 14px;">
       <h3>Consigli</h3>
-      <p>Se il riconoscimento tarda, usa la Calibrazione e riduci la soglia Volume.</p>
+      <p>Se l'RMS è basso, usa il cursore "Input Boost" in Calibrazione.</p>
     </div>
     <div style="text-align:center;max-width:500px;margin:10px auto 0;">
       <button type="button" class="btn-primary" id="instrBackBtn" style="width:100%;background:rgba(255,255,255,.1);">← Torna alla Home</button>
@@ -166,6 +155,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       <h1>⚙️ Calibrazione</h1>
       <p class="subtitle">Regola i parametri e testa il riconoscimento</p>
     </div>
+
     <div class="sensitivity-controls">
       <h3>🎚️ Preset e Impostazioni</h3>
       <div class="preset-buttons">
@@ -173,8 +163,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         <button class="btn-preset" id="presetMobile">📱 Mobile</button>
         <button class="btn-preset" id="presetCustom">⚙️ Manuale</button>
       </div>
+      
+      <div class="slider-group" style="border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:15px;">
+        <div class="slider-label"><span>🔊 Input Boost (Pre-Amp)</span><span class="slider-value" id="boostValue">5.0x</span></div>
+        <input type="range" min="1.0" max="20.0" step="0.5" value="5.0" class="slider" id="boostSlider" style="background: var(--secondary-color);">
+      </div>
+
       <div class="slider-group">
-        <div class="slider-label"><span>Volume Minimo</span><span class="slider-value" id="volumeValue">0.015</span></div>
+        <div class="slider-label"><span>Volume Minimo (Soglia)</span><span class="slider-value" id="volumeValue">0.015</span></div>
         <input type="range" min="0.01" max="0.50" step="0.005" value="0.015" class="slider" id="volumeSlider">
       </div>
       <div class="slider-group">
@@ -190,6 +186,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         <input type="range" min="300" max="1200" step="50" value="500" class="slider" id="cooldownSlider">
       </div>
     </div>
+    
+    <div id="noiseIndicatorContainer" class="info-box" style="max-width:500px; margin:0 auto 15px; padding:10px 16px; text-align:center; border-left:4px solid var(--text-secondary);">
+        <h3 style="margin-bottom:4px; color: var(--text-secondary); font-size:0.95rem;">Livello Rumore Attuale (RMS)</h3>
+        <div style="background:rgba(255,255,255,0.1); border-radius:5px;">
+            <div id="rmsBar" style="height:10px; border-radius:5px; background:var(--success-color); width:0; transition:width 0.1s ease;"></div>
+        </div>
+    </div>
+
     <div class="question-card" style="max-width:500px;margin:0 auto 12px;">
       <h3 style="margin-bottom:12px;color:var(--text-secondary);">🎹 Test Riconoscimento</h3>
       <div class="degree-question" id="calibrationNote" style="font-size:3.2rem;margin:24px 0;">-</div>
@@ -198,7 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
         <div class="status-text" id="calibrationStatus">Suona una nota per testare...</div>
       </div>
       <div style="margin-top:12px;color:var(--text-secondary);font-size:.9rem;">
-        Volume: <span id="calibrationVolumeValue">0.000</span> • Freq: <span id="calibrationFreqValue">—</span> Hz • Gain: <span id="gainValue">1.0</span>x
+        Volume: <span id="calibrationVolumeValue">0.000</span> • Freq: <span id="calibrationFreqValue">—</span> Hz • Gain: <span id="gainValue">5.0</span>x
       </div>
     </div>
     <div style="text-align:center;max-width:500px;margin:0 auto;">
@@ -232,7 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
     <div class="sticky-footer" style="text-align:center;margin-top:16px;">
       <button class="btn-primary" id="stopQuizBtn" style="background:rgba(244,67,54,.9);padding:10px 26px;font-size:1rem;">⏹️ Ferma Quiz</button>
       <div id="volumeDebug" style="font-size:.9rem;color:var(--text-secondary);margin-top:8px;display:block;">
-        Volume: <span id="volumeValue2">0.000</span> • Freq: <span id="freqValue2">—</span> Hz • Gain: <span id="gainValue2">1.0</span>x • Path: <span id="pathValue">auto</span>
+        Volume: <span id="volumeValue2">0.000</span> • Freq: <span id="freqValue2">—</span> Hz • Gain: <span id="gainValue2">5.0</span>x • Path: <span id="pathValue">auto</span>
       </div>
     </div>
 
@@ -256,23 +260,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 </div>
 
 <script>
-const APP_VERSION='v9.0.0';
+const APP_VERSION='v9.0.1';
 
 class IntervalTrainerApp{
   constructor(){
-    // === NUOVE LOGICHE SCALA E GRADI ===
-    this.selectedKey='C';
-    this.selectedMode='MAGGIORE';
-    this.selectedDegrees='DIATONIC'; 
-
+    // CONFIGURAZIONE INIZIALE
+    this.selectedKey='C'; this.selectedMode='MAGGIORE'; this.selectedDegrees='DIATONIC'; 
+    this.currentKey='C'; this.currentMode='MAGGIORE';
+    
+    // DEFINIZIONI MUSICALI
     this.keys = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'F', 'Bb', 'Eb', 'Ab', 'Db'];
-    this.modes = {
-        'MAGGIORE': [0, 2, 4, 5, 7, 9, 11], 
-        'MINORE NATURALE': [0, 2, 3, 5, 7, 8, 10], 
-        'DORICO': [0, 2, 3, 5, 7, 9, 10],
-        'MISOLIDIO': [0, 2, 4, 5, 7, 9, 10],
-        'MINORE ARMONICA': [0, 2, 3, 5, 7, 8, 11]
-    };
+    this.modes = { 'MAGGIORE':[0,2,4,5,7,9,11], 'MINORE NATURALE':[0,2,3,5,7,8,10], 'DORICO':[0,2,3,5,7,9,10], 'MISOLIDIO':[0,2,4,5,7,9,10], 'MINORE ARMONICA':[0,2,3,5,7,8,11] };
     this.degreeMap = {
         'DIATONIC': {0:'I', 2:'II', 4:'III', 5:'IV', 7:'V', 9:'VI', 11:'VII'}, 
         'CHORD_TONES': {0:'I', 4:'III', 7:'V', 11:'VII'},
@@ -280,23 +278,23 @@ class IntervalTrainerApp{
         'CHROMATIC_ALTER': {0:'I', 1:'b9', 2:'9', 3:'#9', 4:'III', 5:'IV', 6:'b5/#11', 7:'V', 8:'#5/b13', 9:'VI', 10:'b7', 11:'VII'}
     };
     this.noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    this.noteToMidi = {}; 
-    this.initializeNoteMaps();
-    // =====================================
+    this.noteToMidi = {}; this.initializeNoteMaps();
 
+    // STATO QUIZ
     this.currentQuestion=0; this.totalQuestions=30; this.correctAnswers=0;
-    this.currentDegreeInterval=null; this.currentScaleName=null; this.lastDegree=null; // Variabili aggiornate
-
-    // VARIABILI PER IL TEMPO
+    this.currentDegree=null; this.currentScale=null; this.lastDegree=null;
     this.quizStartTime = 0; this.totalResponseTime = 0; this.questionStartTime = 0; 
 
-    // --- LOGICA AUDIO ORIGINALE V6.8.3 ---
+    // AUDIO ENGINE (BASE v6.8.3 + INPUT BOOST)
     this.audioContext=null; this.stream=null;
     this.preGain=null; this.hp=null; this.lp=null; this.analyser=null; this.dataArray=null; this.scriptNode=null; this.muteNode=null;
     this.isListening=false;
     this.isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
     this.useScriptNode=this.isIOS; 
     const pv=document.getElementById('pathValue'); if(pv) pv.textContent=this.isIOS?'iOS-SPN':'desktop';
+    
+    // Parametri con Input Gain aggiunto
+    this.inputGain=5.0; // Default Boost 5x
     this.volumeThreshold=0.015; this.requiredStableDetections=3; this.spikeMultiplier=1.4; this.cooldownPeriod=500;
     this.currentVolume=0; this.noteStabilityBuffer=[];
     this.warmupStartTime=null; this.warmupDuration=300;
@@ -304,14 +302,11 @@ class IntervalTrainerApp{
     this.silenceFramesRequired=2; this.currentSilenceFrames=0; this.readyForNextNote=true;
     this.minPianoFreq=25; this.maxPianoFreq=4200;
     this.isCapturing=false;
-    // ---------------------------------------
+    this.maxRmsDisplay = 0.1;
 
-    this.initEventListeners(); 
-    this.initSliders();
-    this.loadCalibration(); // Persistenza
+    this.initEventListeners(); this.initSliders(); this.loadCalibration();
   }
 
-  // HELPER NUOVI
   initializeNoteMaps(){ this.noteNames.forEach((note, index) => { this.noteToMidi[note] = index; if(note.includes('#')){ this.noteToMidi[this.getEnharmonic(note)] = index; } }); }
   getEnharmonic(note){ const enhMap = {'C#':'Db', 'Db':'C#', 'D#':'Eb', 'Eb':'D#', 'F#':'Gb', 'Gb':'F#', 'G#':'Ab', 'Ab':'G#', 'A#':'Bb', 'Bb':'A#', 'E#':'F', 'F':'E#', 'B#':'C', 'C':'B#'}; return enhMap[note] || null; }
   getNoteFromInterval(key, mode, intervalIndex){
@@ -322,9 +317,8 @@ class IntervalTrainerApp{
     return { expectedNote: this.noteNames[midiNote % 12], degreeName: degreeName };
   }
 
-  // SALVATAGGIO/CARICAMENTO LOCALE
-  loadCalibration(){ try { this.volumeThreshold = parseFloat(localStorage.getItem('SCT_VOLUME')) || 0.015; this.requiredStableDetections = parseInt(localStorage.getItem('SCT_STABILITY')) || 3; this.spikeMultiplier = parseFloat(localStorage.getItem('SCT_SPIKE')) || 1.4; this.cooldownPeriod = parseInt(localStorage.getItem('SCT_COOLDOWN')) || 500; } catch(e) {} }
-  saveCalibration(){ localStorage.setItem('SCT_VOLUME', this.volumeThreshold.toFixed(3)); localStorage.setItem('SCT_STABILITY', this.requiredStableDetections); localStorage.setItem('SCT_SPIKE', this.spikeMultiplier.toFixed(1)); localStorage.setItem('SCT_COOLDOWN', this.cooldownPeriod); alert('Impostazioni salvate!'); this.backFromCalibration(); }
+  loadCalibration(){ try { this.inputGain = parseFloat(localStorage.getItem('SCT_GAIN')) || 5.0; this.volumeThreshold = parseFloat(localStorage.getItem('SCT_VOLUME')) || 0.015; this.requiredStableDetections = parseInt(localStorage.getItem('SCT_STABILITY')) || 3; this.spikeMultiplier = parseFloat(localStorage.getItem('SCT_SPIKE')) || 1.4; this.cooldownPeriod = parseInt(localStorage.getItem('SCT_COOLDOWN')) || 500; } catch(e) {} }
+  saveCalibration(){ localStorage.setItem('SCT_GAIN', this.inputGain.toFixed(1)); localStorage.setItem('SCT_VOLUME', this.volumeThreshold.toFixed(3)); localStorage.setItem('SCT_STABILITY', this.requiredStableDetections); localStorage.setItem('SCT_SPIKE', this.spikeMultiplier.toFixed(1)); localStorage.setItem('SCT_COOLDOWN', this.cooldownPeriod); alert('Impostazioni salvate!'); this.backFromCalibration(); }
 
   initEventListeners(){
     const qs=(id)=>document.getElementById(id);
@@ -338,48 +332,51 @@ class IntervalTrainerApp{
     qs('backFromCalibrationBtn').addEventListener('click', async (e)=>{ e.preventDefault(); e.stopPropagation(); await this.backFromCalibration(); });
     qs('startBtn').addEventListener('click',()=>this.startQuiz());
     qs('stopQuizBtn').addEventListener('click',()=>this.stopQuiz());
-    // FINALE
-    document.getElementById('finalScore').addEventListener('click', (e) => {
-        if (e.target.id === 'repeatQuizBtn') { this.restart(false); } 
-        else if (e.target.id === 'backToHomeBtn') { this.restart(true); }
-    });
+    document.getElementById('finalScore').addEventListener('click', (e) => { if (e.target.id === 'repeatQuizBtn') { this.restart(false); } else if (e.target.id === 'backToHomeBtn') { this.restart(true); } });
     document.body.addEventListener('touchend',async()=>{ if(this.audioContext && this.audioContext.state==='suspended'){ try{await this.audioContext.resume()}catch(_){ } } },{passive:true});
   }
 
-  // --- SLIDERS (Logica Originale + Caricamento) ---
   initSliders(){
     const setVal=(id,val,fmt=v=>v)=>{document.getElementById(id).textContent=fmt(val)};
+    const boost=document.getElementById('boostSlider'); // NUOVO
     const vol=document.getElementById('volumeSlider'), stab=document.getElementById('stabilitySlider'), spike=document.getElementById('spikeSlider'), cool=document.getElementById('cooldownSlider');
+    
+    // Input Gain Listener
+    boost.addEventListener('input',e=>{const v=parseFloat(e.target.value); setVal('boostValue',v,v=>v.toFixed(1)+'x'); this.inputGain=v; if(this.preGain) this.preGain.gain.value=v; });
+
     vol.addEventListener('input',e=>{const v=parseFloat(e.target.value); setVal('volumeValue',v,v=>v.toFixed(3)); this.volumeThreshold=v; });
     stab.addEventListener('input',e=>{const v=parseInt(e.target.value); setVal('stabilityValue',v); this.requiredStableDetections=v; });
     spike.addEventListener('input',e=>{const v=parseFloat(e.target.value); setVal('spikeValue',v,v=>v.toFixed(1)+'x'); this.spikeMultiplier=v; });
     cool.addEventListener('input',e=>{const v=parseInt(e.target.value); setVal('cooldownValue',v); this.cooldownPeriod=v; });
     
-    const activatePreset=(volVal,stabVal,spikeVal,coolVal,presetId)=>{
-      vol.value=volVal; stab.value=stabVal; spike.value=spikeVal; cool.value=coolVal;
-      setVal('volumeValue',volVal,v=>v.toFixed(3)); setVal('stabilityValue',stabVal); setVal('spikeValue',spikeVal,v=>v.toFixed(1)+'x'); setVal('cooldownValue',coolVal);
-      this.volumeThreshold=volVal; this.requiredStableDetections=stabVal; this.spikeMultiplier=spikeVal; this.cooldownPeriod=coolVal;
+    const activatePreset=(gainVal,volVal,stabVal,spikeVal,coolVal,presetId)=>{
+      boost.value=gainVal; vol.value=volVal; stab.value=stabVal; spike.value=spikeVal; cool.value=coolVal;
+      setVal('boostValue',gainVal,v=>v.toFixed(1)+'x'); setVal('volumeValue',volVal,v=>v.toFixed(3)); setVal('stabilityValue',stabVal); setVal('spikeValue',spikeVal,v=>v.toFixed(1)+'x'); setVal('cooldownValue',coolVal);
+      this.inputGain=gainVal; this.volumeThreshold=volVal; this.requiredStableDetections=stabVal; this.spikeMultiplier=spikeVal; this.cooldownPeriod=coolVal;
+      if(this.preGain) this.preGain.gain.value=gainVal;
       document.querySelectorAll('.btn-preset').forEach(b=>b.classList.remove('active')); document.getElementById(presetId).classList.add('active');
     };
-    // PRESETS
-    document.getElementById('presetDesktop').addEventListener('click',()=>activatePreset(0.015,3,1.4,500,'presetDesktop'));
-    document.getElementById('presetMobile').addEventListener('click',()=>activatePreset(0.05,4,1.8,700,'presetMobile'));
+
+    document.getElementById('presetDesktop').addEventListener('click',()=>activatePreset(5.0,0.015,3,1.4,500,'presetDesktop'));
+    document.getElementById('presetMobile').addEventListener('click',()=>activatePreset(8.0,0.05,4,1.8,700,'presetMobile'));
     document.getElementById('presetCustom').addEventListener('click',()=>{ document.querySelectorAll('.btn-preset').forEach(b=>b.classList.remove('active')); document.getElementById('presetCustom').classList.add('active'); });
     
-    // DEFAULT LOAD
-    if (localStorage.getItem('SCT_VOLUME') === null) { activatePreset(0.015,3,1.4,500,'presetDesktop'); } 
-    else { activatePreset(this.volumeThreshold, this.requiredStableDetections, this.spikeMultiplier, this.cooldownPeriod, 'presetCustom'); }
+    if (localStorage.getItem('SCT_VOLUME') === null) { activatePreset(5.0,0.015,3,1.4,500,'presetDesktop'); } 
+    else { activatePreset(this.inputGain, this.volumeThreshold, this.requiredStableDetections, this.spikeMultiplier, this.cooldownPeriod, 'presetCustom'); }
   }
 
   show(id){ ['setupScreen','instructionsScreen','calibrationScreen','quizScreen'].forEach(s=>{ const el=document.getElementById(s); if(s===id){ el.classList.add('active'); el.style.display='flex'; }else{ el.classList.remove('active'); el.style.display='none'; } }); }
 
-  // --- AUDIO ENGINE (ORIGINALE V6.8.3) ---
   async ensureAudioContext(){ if(!this.audioContext){ this.audioContext=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'}); } if(this.audioContext.state==='suspended'){ try{await this.audioContext.resume()}catch(_){ } } }
-  async getStream(){ if(this.isIOS){ return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:{ideal:48000}}}); }else{ return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}}); } }
+  async getStream(){ 
+      // FIX V9.0.1: AutoGain ON ovunque per segnali deboli
+      return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true,channelCount:1}}); 
+  }
   
   async buildAudioChain(stream){
     await this.ensureAudioContext();
-    this.preGain=this.audioContext.createGain(); this.preGain.gain.value=this.isIOS?6.0:1.0;
+    this.preGain=this.audioContext.createGain(); 
+    this.preGain.gain.value = this.inputGain; // USA IL VALORE DELLO SLIDER
     this.hp=this.audioContext.createBiquadFilter(); this.hp.type='highpass'; this.hp.frequency.value=30;
     this.lp=this.audioContext.createBiquadFilter(); this.lp.type='lowpass';  this.lp.frequency.value=4200;
     const source=this.audioContext.createMediaStreamSource(stream);
@@ -401,11 +398,25 @@ class IntervalTrainerApp{
   processAudioBlock(buffer,sampleRate,isCalibration){
     let sum=0; for(let i=0;i<buffer.length;i++) sum+=buffer[i]*buffer[i];
     let rms=Math.sqrt(sum/buffer.length); this.currentVolume=rms;
-    if(this.preGain){ if(rms<0.002 && this.preGain.gain.value<12){ this.preGain.gain.value=Math.min(12,this.preGain.gain.value*1.6); } if(rms>0.06 && this.preGain.gain.value>1){ this.preGain.gain.value=Math.max(1,this.preGain.gain.value/1.3); } }
-    if(isCalibration){ const v=document.getElementById('calibrationVolumeValue'); if(v) v.textContent=rms.toFixed(3); const gv=document.getElementById('gainValue'); if(gv) gv.textContent=this.preGain.gain.value.toFixed(1); if(this.analyser){ this.analyser.getFloatTimeDomainData(this.dataArray); } }else{ const v2=document.getElementById('volumeValue2'); if(v2) v2.textContent=rms.toFixed(3); const gv2=document.getElementById('gainValue2'); if(gv2) gv2.textContent=this.preGain.gain.value.toFixed(1); if(this.analyser){ this.analyser.getFloatTimeDomainData(this.dataArray); const f2=document.getElementById('freqValue2'); if(f2) f2.textContent='—'; } }
+    // Auto-gain limitato per evitare esplosioni
+    if(this.preGain){ if(rms<0.002 && this.preGain.gain.value < this.inputGain * 2){ this.preGain.gain.value = Math.min(20, this.preGain.gain.value*1.1); } }
+    
+    // UI Updates
+    if(isCalibration){ 
+        const v=document.getElementById('calibrationVolumeValue'); if(v) v.textContent=rms.toFixed(3); 
+        const gv=document.getElementById('gainValue'); if(gv) gv.textContent=this.preGain.gain.value.toFixed(1); 
+        const rmsBar=document.getElementById('rmsBar'); const width = Math.min(100, Math.round((rms / this.maxRmsDisplay) * 100)); rmsBar.style.width = width + '%';
+        if (rms > this.volumeThreshold) { rmsBar.style.backgroundColor = 'var(--error-color)'; } else if (rms > this.volumeThreshold * 0.5) { rmsBar.style.backgroundColor = '#FF9800'; } else { rmsBar.style.backgroundColor = 'var(--success-color)'; }
+        if(this.analyser){ this.analyser.getFloatTimeDomainData(this.dataArray); } 
+    }else{ 
+        const v2=document.getElementById('volumeValue2'); if(v2) v2.textContent=rms.toFixed(3); 
+        const gv2=document.getElementById('gainValue2'); if(gv2) gv2.textContent=this.preGain.gain.value.toFixed(1); 
+        if(this.analyser){ this.analyser.getFloatTimeDomainData(this.dataArray); const f2=document.getElementById('freqValue2'); if(f2) f2.textContent='—'; } 
+    }
+
     if(!this.warmupReady()) return;
     const silenceThreshold=this.volumeThreshold*0.5;
-    if(rms<silenceThreshold){ this.currentSilenceFrames++; if(this.currentSilenceFrames>=this.silenceFramesRequired){ this.readyForNextNote=true; const dot=isCalibration?document.getElementById('calibrationVolumeDot'):document.getElementById('volumeDot'); if(dot) dot.classList.remove('active'); if(isCalibration){ const s=document.getElementById('calibrationStatus'); if(s) s.textContent='Suona una nota per testare...'; } } return; }else{ this.currentSilenceFrames=0; }
+    if(rms<silenceThreshold){ this.currentSilenceFrames++; if(this.currentSilenceFrames>=this.silenceFramesRequired){ this.readyForNextNote=true; const dot=isCalibration?document.getElementById('calibrationVolumeDot'):document.getElementById('volumeDot'); if(dot) dot.classList.remove('active'); if(isCalibration){ const s=document.getElementById('calibrationStatus'); if(s) s.textContent='Suona una nota per testare...'; const nEl=document.getElementById('calibrationNote'); if(nEl) nEl.textContent='-'; } } return; }else{ this.currentSilenceFrames=0; }
     const inCooldown=(Date.now()-this.lastNoteTime)<this.cooldownPeriod;
     if(!(rms>this.volumeThreshold) || !this.readyForNextNote || inCooldown) return;
     const freq=this.yinPitch(buffer,sampleRate);
@@ -417,11 +428,14 @@ class IntervalTrainerApp{
     if(!this.isListening || this.useScriptNode) return;
     this.analyser.getFloatTimeDomainData(this.dataArray);
     const rms=this.computeRms(this.dataArray); this.currentVolume=rms;
-    if(this.preGain){ if(rms<0.003 && this.preGain.gain.value<10){ this.preGain.gain.value=Math.min(10,this.preGain.gain.value*1.5); } if(rms>0.04 && this.preGain.gain.value>1){ this.preGain.gain.value=Math.max(1,this.preGain.gain.value/1.2); } }
+    // UI Updates
     const v=document.getElementById('calibrationVolumeValue'); if(v) v.textContent=rms.toFixed(3); const gv=document.getElementById('gainValue'); if(gv) gv.textContent=this.preGain.gain.value.toFixed(1);
+    const rmsBar=document.getElementById('rmsBar'); const width = Math.min(100, Math.round((rms / this.maxRmsDisplay) * 100)); rmsBar.style.width = width + '%';
+    if (rms > this.volumeThreshold) { rmsBar.style.backgroundColor = 'var(--error-color)'; } else if (rms > this.volumeThreshold * 0.5) { rmsBar.style.backgroundColor = '#FF9800'; } else { rmsBar.style.backgroundColor = 'var(--success-color)'; }
+
     if(!this.warmupReady()){ requestAnimationFrame(()=>this.detectCalibrationPitch()); return; }
     const silenceThreshold=this.volumeThreshold*0.5;
-    if(rms<silenceThreshold){ this.currentSilenceFrames++; if(this.currentSilenceFrames>=this.silenceFramesRequired){ this.readyForNextNote=true; document.getElementById('calibrationVolumeDot').classList.remove('active'); document.getElementById('calibrationStatus').textContent='Suona una nota per testare...'; } requestAnimationFrame(()=>this.detectCalibrationPitch()); return; }else this.currentSilenceFrames=0;
+    if(rms<silenceThreshold){ this.currentSilenceFrames++; if(this.currentSilenceFrames>=this.silenceFramesRequired){ this.readyForNextNote=true; document.getElementById('calibrationVolumeDot').classList.remove('active'); document.getElementById('calibrationStatus').textContent='Suona una nota per testare...'; document.getElementById('calibrationNote').textContent='-'; } requestAnimationFrame(()=>this.detectCalibrationPitch()); return; }else this.currentSilenceFrames=0;
     const inCooldown=(Date.now()-this.lastNoteTime)<this.cooldownPeriod;
     if((rms>this.volumeThreshold)&&!inCooldown&&this.readyForNextNote){ const freq=this.yinPitch(this.dataArray,this.audioContext.sampleRate); document.getElementById('calibrationFreqValue').textContent=(freq>0?freq.toFixed(1):'—'); if(freq>this.minPianoFreq && freq<this.maxPianoFreq){ this.handleStableNote(freq,true); } }
     requestAnimationFrame(()=>this.detectCalibrationPitch());
@@ -431,7 +445,6 @@ class IntervalTrainerApp{
     if(!this.isListening || this.useScriptNode) return;
     this.analyser.getFloatTimeDomainData(this.dataArray);
     const rms=this.computeRms(this.dataArray); this.currentVolume=rms;
-    if(this.preGain){ if(rms<0.003 && this.preGain.gain.value<10){ this.preGain.gain.value=Math.min(10,this.preGain.gain.value*1.5); } if(rms>0.04 && this.preGain.gain.value>1){ this.preGain.gain.value=Math.max(1,this.preGain.gain.value/1.2); } }
     if(!this.warmupReady()){ document.getElementById('volumeValue2').textContent=rms.toFixed(3); document.getElementById('gainValue2').textContent=this.preGain.gain.value.toFixed(1); requestAnimationFrame(()=>this.detectPitch()); return; }
     if(!this.isCapturing && rms > this.volumeThreshold && this.readyForNextNote && (Date.now()-this.lastNoteTime)>=this.cooldownPeriod){ this.isCapturing = true; this.noteStabilityBuffer = []; }
     if(this.isCapturing && rms < this.volumeThreshold*0.6){ this.isCapturing = false; this.noteStabilityBuffer = []; }
@@ -472,7 +485,6 @@ class IntervalTrainerApp{
     const n=Math.round(12*Math.log2(f/C0)); return names[((n%12)+12)%12];
   }
 
-  // --- NUOVA LOGICA QUIZ ---
   evaluateAnswer(detected){
     const responseTime = Date.now() - this.questionStartTime;
     this.totalResponseTime += responseTime; 
@@ -491,7 +503,6 @@ class IntervalTrainerApp{
   showResult(correct,detected,expected){
     const card=document.getElementById('resultCard'), icon=document.getElementById('resultIcon'), title=document.getElementById('resultTitle'), details=document.getElementById('resultDetails');
     card.style.display='block';
-    // Costruisco il testo dinamicamente
     const expectedData = this.getNoteFromInterval(this.currentKey, this.currentMode, this.currentDegreeInterval);
     const scaleText = `${this.currentKey} ${this.currentMode}`;
     if(correct){
@@ -513,7 +524,7 @@ class IntervalTrainerApp{
   showFinalScore(){
     this.isListening=false;
     const pct=Math.round((this.correctAnswers/this.totalQuestions)*100);
-    const avgTime = this.totalResponseTime / this.totalQuestions / 1000; // Tempo medio
+    const avgTime = this.totalResponseTime / this.totalQuestions / 1000;
     document.querySelector('.question-card').style.display='none'; document.querySelector('.status-indicator').style.display='none'; document.getElementById('resultCard').style.display='none'; document.getElementById('stopQuizBtn').style.display='none';
     const box=document.getElementById('finalScore'); box.style.display='block';
     document.getElementById('finalPercentage').textContent=pct+'%'; document.getElementById('correctCount').textContent=this.correctAnswers; document.getElementById('wrongCount').textContent=this.totalQuestions-this.correctAnswers;
@@ -536,7 +547,7 @@ class IntervalTrainerApp{
   }
   async setupAudio(){ try{ const stream=await this.getStream(); this.stream=stream; await this.buildAudioChain(stream); this.isListening=true; this.warmupStartTime=Date.now(); this.isCapturing=false; if(!this.useScriptNode) this.detectPitch(); }catch(err){ console.error('Mic error (quiz):',err); alert('Impossibile accedere al microfono.'); } }
   
-  stopQuiz(){ this.backFromCalibration(); } // Riutilizza la logica di chiusura pulita
+  stopQuiz(){ this.backFromCalibration(); }
   
   restart(toHome=false){
     this.currentQuestion=0; this.correctAnswers=0; this.lastDegree=null;
@@ -556,7 +567,6 @@ class IntervalTrainerApp{
     document.getElementById('statusText').textContent='In ascolto...';
     document.getElementById('volumeDot').classList.remove('active');
     
-    // LOGICA RANDOMIZZATA KEY/MODE
     if(this.selectedKey==='RANDOM_KEY'){ this.currentKey=this.keys[Math.floor(Math.random()*this.keys.length)]; } else { this.currentKey=this.selectedKey; }
     if(this.selectedMode==='RANDOM_MODE'){ const modes=Object.keys(this.modes); this.currentMode=modes[Math.floor(Math.random()*modes.length)]; } else { this.currentMode=this.selectedMode; }
 
@@ -576,7 +586,7 @@ class IntervalTrainerApp{
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  console.log(`🚀 Scale Degree Trainer ${APP_VERSION} – Hybrid Stable`);
+  console.log(`🚀 Scale Degree Trainer ${APP_VERSION} – Input Boost Added`);
   document.getElementById('versionBadge').textContent=`${APP_VERSION}`;
   window.app=new IntervalTrainerApp();
   const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
