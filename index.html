@@ -6,9 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1a2e">
-<title>Scale Degree Trainer - Piano v11.0.1</title>
+<title>Scale Degree Trainer - v12.0.0</title>
 <style>
-/* CSS ORIGINALE v6.8.3 */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--primary-color:#4a90e2;--secondary-color:#7b68ee;--success-color:#4caf50;--error-color:#f44336;--bg-dark:#1a1a2e;--bg-card:#16213e;--text-primary:#fff;--text-secondary:#a0a0a0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;background:linear-gradient(135deg,var(--bg-dark) 0%,#0f3460 100%);color:var(--text-primary);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -72,14 +71,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .small{font-size:.9rem;opacity:.8}
 @media (max-width:768px){#setupScreen h1{font-size:2rem}.degree-question{font-size:2.2rem}.score-breakdown{grid-template-columns:1fr}}
 .result-details strong { display: block; font-size: 2.6rem; line-height: 1.1; color: #ffffff; margin-bottom: 6px; }
-@media (max-width: 480px) { .result-details strong { font-size: 2.2rem; } }
 </style>
 </head>
 <body>
 <div class="container">
+  <div id="errorBox" style="display:none; position:fixed; top:0; left:0; width:100%; background:red; color:white; padding:20px; z-index:9999; text-align:center;"></div>
+
   <div id="setupScreen" class="screen active">
     <h1>🎹 Scale Degree Trainer</h1>
-    <div class="version-badge" id="versionBadge">v11.0.1</div> 
+    <div class="version-badge" id="versionBadge">v12.0.0</div> 
     <p class="subtitle">Impara i gradi delle scale e dei modi</p>
 
     <div class="setup-section">
@@ -125,6 +125,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       <button class="btn-primary" id="calibrationBtn">⚙️ Calibrazione</button>
       <button class="btn-primary" id="startBtn">Inizia Sessione</button>
     </div>
+    <div class="small" style="margin-top:10px;">Suggerimento: tieni la nota per ~0.5 secondi.</div>
   </div>
 
   <div id="instructionsScreen" class="screen">
@@ -135,7 +136,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
   <div id="calibrationScreen" class="screen">
     <div style="text-align:center;margin-bottom:24px;"><h1>⚙️ Calibrazione</h1><p class="subtitle">Regola parametri</p></div>
-    <div class="sensitivity-controls">
+    <div class="sensitivity-controls" style="max-width:500px;margin:0 auto 20px;">
       <div class="preset-buttons">
         <button class="btn-preset" id="presetDesktop">💻 Desktop</button><button class="btn-preset" id="presetMobile">📱 Mobile</button><button class="btn-preset" id="presetCustom">⚙️ Manuale</button>
       </div>
@@ -167,6 +168,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       <div class="score-breakdown">
         <div class="score-item"><div class="score-item-value" id="correctCount">0</div><div class="score-item-label">Corrette</div></div>
         <div class="score-item"><div class="score-item-value" id="wrongCount">0</div><div class="score-item-label">Sbagliate</div></div>
+        <div class="score-item" style="grid-column: 1 / span 2;">
+            <div class="score-item-value" id="averageTimeDisplay">0.0s</div>
+            <div class="score-item-label">Tempo Medio Risposta</div>
+        </div>
       </div>
       <div style="display:flex; justify-content:center; gap: 10px; margin-top: 20px;">
           <button class="btn-primary" id="repeatQuizBtn" style="background: var(--success-color);">🔄 Ripeti Quiz</button>
@@ -177,11 +182,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 </div>
 
 <script>
-const APP_VERSION='v11.0.1';
+// CATTURA GLOBALE ERRORI
+window.onerror = function(message, source, lineno, colno, error) {
+    const box = document.getElementById('errorBox');
+    box.style.display = 'block';
+    box.innerHTML += `ERRORE: ${message} at line ${lineno}<br>`;
+};
+
+const APP_VERSION='v12.0.0';
 
 class IntervalTrainerApp{
   constructor(){
-    // --- NEW LOGIC (DATA ONLY) ---
     this.selectedKey='C'; this.selectedMode='MAGGIORE'; this.selectedDegrees='DIATONIC'; 
     this.currentKey='C'; this.currentMode='MAGGIORE';
 
@@ -190,16 +201,18 @@ class IntervalTrainerApp{
     this.degreeMap = { 'DIATONIC': {0:'I', 2:'II', 4:'III', 5:'IV', 7:'V', 9:'VI', 11:'VII'}, 'CHORD_TONES': {0:'I', 4:'III', 7:'V', 11:'VII'}, 'ALL_7TH': {0:'I', 2:'9', 4:'III', 5:'11', 7:'V', 9:'13', 11:'VII'}, 'CHROMATIC_ALTER': {0:'I', 1:'b9', 2:'9', 3:'#9', 4:'III', 5:'IV', 6:'b5/#11', 7:'V', 8:'#5/b13', 9:'VI', 10:'b7', 11:'VII'} };
     this.noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     this.noteToMidi = {}; this.initializeNoteMaps();
-    
-    // --- ORIGINAL STATE ---
+
     this.currentQuestion=0; this.totalQuestions=30; this.correctAnswers=0;
-    this.currentDegree=null; this.currentScale=null; this.lastDegree=null;
+    this.currentDegreeInterval=null; this.lastDegree=null;
+    this.quizStartTime = 0; this.totalResponseTime = 0; this.questionStartTime = 0; 
+
     this.audioContext=null; this.stream=null;
     this.preGain=null; this.hp=null; this.lp=null; this.analyser=null; this.dataArray=null; this.scriptNode=null; this.muteNode=null;
     this.isListening=false;
     this.isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
     this.useScriptNode=this.isIOS; 
     const pv=document.getElementById('pathValue'); if(pv) pv.textContent=this.isIOS?'iOS-SPN':'desktop';
+
     this.volumeThreshold=0.015; this.requiredStableDetections=3; this.spikeMultiplier=1.4; this.cooldownPeriod=500;
     this.currentVolume=0; this.noteStabilityBuffer=[];
     this.warmupStartTime=null; this.warmupDuration=300;
@@ -229,12 +242,19 @@ class IntervalTrainerApp{
     qs('keySelect').addEventListener('change',e=>this.selectedKey=e.target.value);
     qs('modeSelect').addEventListener('change',e=>this.selectedMode=e.target.value);
     qs('degreeSelect').addEventListener('change',e=>this.selectedDegrees=e.target.value);
+    
     qs('instructionsBtn').addEventListener('click',()=>this.show('instructionsScreen'));
     qs('instrBackBtn').addEventListener('click',()=>this.show('setupScreen'));
     qs('calibrationBtn').addEventListener('click',()=>this.openCalibration());
     qs('saveCalibrationBtn').addEventListener('click',()=>this.saveCalibration());
-    qs('backFromCalibrationBtn').addEventListener('click', async (e)=>{ e.preventDefault(); e.stopPropagation(); await this.backFromCalibration(); });
-    qs('startBtn').addEventListener('click',()=>this.startQuiz());
+    qs('backFromCalibrationBtn').addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); this.backFromCalibration(); });
+    
+    // FIX CRITICO: Avvio sincrono + audio asincrono senza await bloccante
+    qs('startBtn').addEventListener('click', ()=>{ 
+        this.show('quizScreen'); // Cambio pagina immediato
+        this.startQuiz(); // Poi avvio logica
+    });
+    
     qs('stopQuizBtn').addEventListener('click',()=>this.stopQuiz());
     qs('repeatQuizBtn').addEventListener('click',()=>this.restart(false));
     qs('backToHomeBtn').addEventListener('click',()=>this.restart(true));
@@ -248,24 +268,28 @@ class IntervalTrainerApp{
     stab.addEventListener('input',e=>{const v=parseInt(e.target.value); setVal('stabilityValue',v); this.requiredStableDetections=v; });
     spike.addEventListener('input',e=>{const v=parseFloat(e.target.value); setVal('spikeValue',v,v=>v.toFixed(1)+'x'); this.spikeMultiplier=v; });
     cool.addEventListener('input',e=>{const v=parseInt(e.target.value); setVal('cooldownValue',v); this.cooldownPeriod=v; });
+    
     const activatePreset=(volVal,stabVal,spikeVal,coolVal,presetId)=>{
       vol.value=volVal; stab.value=stabVal; spike.value=spikeVal; cool.value=coolVal;
       setVal('volumeValue',volVal,v=>v.toFixed(3)); setVal('stabilityValue',stabVal); setVal('spikeValue',spikeVal,v=>v.toFixed(1)+'x'); setVal('cooldownValue',coolVal);
       this.volumeThreshold=volVal; this.requiredStableDetections=stabVal; this.spikeMultiplier=spikeVal; this.cooldownPeriod=coolVal;
       document.querySelectorAll('.btn-preset').forEach(b=>b.classList.remove('active')); document.getElementById(presetId).classList.add('active');
     };
+
     document.getElementById('presetDesktop').addEventListener('click',()=>activatePreset(0.015,3,1.4,500,'presetDesktop'));
     document.getElementById('presetMobile').addEventListener('click',()=>activatePreset(0.05,4,1.8,700,'presetMobile'));
     document.getElementById('presetCustom').addEventListener('click',()=>{ document.querySelectorAll('.btn-preset').forEach(b=>b.classList.remove('active')); document.getElementById('presetCustom').classList.add('active'); });
+    
     if (localStorage.getItem('SCT_VOLUME') === null) { activatePreset(0.015,3,1.4,500,'presetDesktop'); } 
     else { activatePreset(this.volumeThreshold, this.requiredStableDetections, this.spikeMultiplier, this.cooldownPeriod, 'presetCustom'); }
   }
 
   show(id){ ['setupScreen','instructionsScreen','calibrationScreen','quizScreen'].forEach(s=>{ const el=document.getElementById(s); if(s===id){ el.classList.add('active'); el.style.display='flex'; }else{ el.classList.remove('active'); el.style.display='none'; } }); }
 
-  // --- AUDIO ENGINE (ORIGINALE v6.8.3) ---
+  // --- CORE AUDIO (ORIGINALE V6.8.3 - INTATTO) ---
   async ensureAudioContext(){ if(!this.audioContext){ this.audioContext=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'}); } if(this.audioContext.state==='suspended'){ try{await this.audioContext.resume()}catch(_){ } } }
   async getStream(){ if(this.isIOS){ return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:{ideal:48000}}}); }else{ return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}}); } }
+  
   async buildAudioChain(stream){
     await this.ensureAudioContext();
     this.preGain=this.audioContext.createGain(); this.preGain.gain.value=this.isIOS?6.0:1.0;
@@ -361,18 +385,21 @@ class IntervalTrainerApp{
     const n=Math.round(12*Math.log2(f/C0)); return names[((n%12)+12)%12];
   }
 
-  // --- LOGICA QUIZ MODIFICATA SOLO QUI ---
   evaluateAnswer(detected){
+    const responseTime = Date.now() - this.questionStartTime;
+    this.totalResponseTime += responseTime;
     const expectedData = this.getNoteFromInterval(this.currentKey, this.currentMode, this.currentDegreeInterval);
     const expected=expectedData.expectedNote; 
     const ok=this.notesMatch(detected,expected);
     if(ok){ this.correctAnswers++; this.showResult(true,detected,expected); } else { this.showResult(false,detected,expected); }
   }
+  
   notesMatch(a,b){
     if(!a||!b) return false; if(a===b) return true;
     const enh={'C#':'Db','Db':'C#','D#':'Eb','Eb':'D#','F#':'Gb','Gb':'F#','G#':'Ab','Ab':'G#','A#':'Bb','Bb':'A#','E#':'F','F':'E#','B#':'C','C':'B#'};
     return (enh[a]&&enh[a]===b)||(enh[b]&&enh[b]===a);
   }
+
   showResult(correct,detected,expected){
     const card=document.getElementById('resultCard'), icon=document.getElementById('resultIcon'), title=document.getElementById('resultTitle'), details=document.getElementById('resultDetails');
     card.style.display='block';
@@ -391,24 +418,39 @@ class IntervalTrainerApp{
         this.currentQuestion++; 
         if(this.currentQuestion<this.totalQuestions){ this.generateQuestion(); } 
         else { this.showFinalScore(); } 
-    }, 1500);
+    }, 1800);
   }
+
   showFinalScore(){
     this.isListening=false;
     const pct=Math.round((this.correctAnswers/this.totalQuestions)*100);
+    const avgTime = this.totalResponseTime / this.totalQuestions / 1000;
     document.querySelector('.question-card').style.display='none'; document.querySelector('.status-indicator').style.display='none'; document.getElementById('resultCard').style.display='none'; document.getElementById('stopQuizBtn').style.display='none';
     const box=document.getElementById('finalScore'); box.style.display='block';
     document.getElementById('finalPercentage').textContent=pct+'%'; document.getElementById('correctCount').textContent=this.correctAnswers; document.getElementById('wrongCount').textContent=this.totalQuestions-this.correctAnswers;
+    document.getElementById('averageTimeDisplay').textContent=avgTime.toFixed(1) + 's';
   }
 
-  // --- FUNZIONI DI NAVIGAZIONE ORIGINALI ---
   async openCalibration(){ this.noteStabilityBuffer=[]; this.volumeHistory=[]; this.currentSilenceFrames=0; this.readyForNextNote=true; this.lastNoteTime=0; this.warmupStartTime=null; this.show('calibrationScreen'); await this.setupAudioForCalibration(); }
   async setupAudioForCalibration(){ try{ const stream=await this.getStream(); this.stream=stream; await this.buildAudioChain(stream); this.isListening=true; this.warmupStartTime=Date.now(); if(!this.useScriptNode) this.detectCalibrationPitch(); }catch(err){ console.error('Mic error (calibration):',err); alert('Impossibile accedere al microfono.'); } }
   saveCalibration(){ this.backFromCalibration(); }
   async backFromCalibration(){
     try{ this.isListening=false; if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } for(const n of [this.scriptNode,this.muteNode,this.lp,this.hp,this.preGain]){ try{ n && n.disconnect && n.disconnect(); }catch(_){} } this.scriptNode=this.muteNode=this.lp=this.hp=this.preGain=null; if(this.audioContext){ try{ await this.audioContext.close(); }catch(_){} this.audioContext=null; } }finally{ this.noteStabilityBuffer=[]; this.currentSilenceFrames=0; this.readyForNextNote=true; const n=document.getElementById('calibrationNote'); if(n) n.textContent='-'; this.show('setupScreen'); }
   }
-  async startQuiz(){ this.show('quizScreen'); await this.setupAudio(); this.generateQuestion(); }
+
+  // FIX DEFINITIVO START
+  async startQuiz(){ 
+    this.quizStartTime = Date.now(); 
+    this.totalResponseTime = 0;
+    try {
+        await this.setupAudio(); 
+        this.generateQuestion(); 
+    } catch(e) {
+        console.error(e);
+        alert('Errore avvio: ' + e.message);
+    }
+  }
+  
   async setupAudio(){ try{ const stream=await this.getStream(); this.stream=stream; await this.buildAudioChain(stream); this.isListening=true; this.warmupStartTime=Date.now(); this.isCapturing=false; if(!this.useScriptNode) this.detectPitch(); }catch(err){ console.error('Mic error (quiz):',err); alert('Impossibile accedere al microfono.'); } }
   stopQuiz(){ this.backFromCalibration(); }
   restart(toHome){ if(toHome){this.backFromCalibration();}else{this.backFromCalibration().then(()=>this.startQuiz());} }
@@ -418,24 +460,32 @@ class IntervalTrainerApp{
     document.getElementById('resultCard').style.display='none';
     document.getElementById('statusText').textContent='In ascolto...';
     document.getElementById('volumeDot').classList.remove('active');
+    
     if(this.selectedKey==='RANDOM_KEY'){ this.currentKey=this.keys[Math.floor(Math.random()*this.keys.length)]; } else { this.currentKey=this.selectedKey; }
     if(this.selectedMode==='RANDOM_MODE'){ const modes=Object.keys(this.modes); this.currentMode=modes[Math.floor(Math.random()*modes.length)]; } else { this.currentMode=this.selectedMode; }
+
     const availableDegrees = Object.keys(this.degreeMap[this.selectedDegrees]);
     let dIndex; do{ dIndex=Math.floor(Math.random()*availableDegrees.length); } while(availableDegrees[dIndex]===this.lastDegree); 
     this.lastDegree=availableDegrees[dIndex]; this.currentDegreeInterval=dIndex; 
+    
     const expectedData = this.getNoteFromInterval(this.currentKey, this.currentMode, this.currentDegreeInterval);
     document.getElementById('scaleDisplay').textContent=`${this.currentKey} ${this.currentMode}`;
     document.getElementById('degreeQuestion').textContent=expectedData.degreeName;
     document.getElementById('currentQuestion').textContent=this.currentQuestion+1;
+    this.questionStartTime = Date.now();
   }
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  console.log(`🚀 Scale Degree Trainer ${APP_VERSION} – Strict Original + Jazz`);
-  document.getElementById('versionBadge').textContent=`${APP_VERSION} • Strict Original`;
-  window.app=new IntervalTrainerApp();
-  const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if(isMobile){ document.getElementById('mobileWarning').style.display='block'; }
+  console.log(`🚀 Scale Degree Trainer ${APP_VERSION} – Debug Edition`);
+  document.getElementById('versionBadge').textContent=`${APP_VERSION}`; 
+  try {
+      window.app=new IntervalTrainerApp();
+      const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if(isMobile){ document.getElementById('mobileWarning').style.display='block'; }
+  } catch(e) {
+      alert('Errore critico avvio: ' + e.message);
+  }
 });
 </script>
 </body>
