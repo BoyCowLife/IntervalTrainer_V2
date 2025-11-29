@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1a2e">
-<title>Scale Degree Trainer - Piano v6.9.12</title>
+<title>Scale Degree Trainer - Piano v6.9.13</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--primary-color:#4a90e2;--secondary-color:#7b68ee;--success-color:#4caf50;--error-color:#f44336;--bg-dark:#1a1a2e;--bg-card:#16213e;--text-primary:#fff;--text-secondary:#a0a0a0}
@@ -63,7 +63,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .result-details{color:var(--text-secondary);font-size:1rem;line-height:1.7}
 .result-details strong { display: block; font-size: 2.6rem; line-height: 1.1; color: #ffffff; margin-bottom: 6px; }
 
-/* Versione Compatta per Mobile */
 @media (max-width: 600px) {
     .result-card { padding: 16px; margin-bottom: 8px; }
     .result-icon { font-size: 2.2rem; margin-bottom: 8px; }
@@ -85,7 +84,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 
 .device-badge { margin: 8px 0 24px; font-size: 1rem; font-weight: 500; opacity: 0.9; }
 
-/* Stile Toggle TTS */
 .tts-toggle-container {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: rgba(74, 144, 226, 0.1);
@@ -104,7 +102,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 <div class="container">
   <div id="setupScreen" class="screen active">
     <h1>🎹 Scale Degree Trainer</h1>
-    <div class="version-badge" id="versionBadge">v6.9.12 • iOS Fix Sync</div>
+    <div class="version-badge" id="versionBadge">v6.9.13 • Sound FX</div>
     <p class="subtitle">Impara i gradi delle scale maggiori</p>
 
     <div class="setup-section">
@@ -265,7 +263,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 </div>
 
 <script>
-const APP_VERSION='v6.9.12';
+const APP_VERSION='v6.9.13';
 
 class IntervalTrainerApp{
   constructor(){
@@ -277,7 +275,7 @@ class IntervalTrainerApp{
     this.useTTS = false;
     this.isSpeaking = false;
     this.voices = [];
-    this.currentUtterance = null; // Globale per GC iOS
+    this.currentUtterance = null; 
 
     // Audio nodes
     this.audioContext=null; this.stream=null;
@@ -314,7 +312,6 @@ class IntervalTrainerApp{
       'Eb':['Eb','F','G','Ab','Bb','C','D'],'Ab':['Ab','Bb','C','Db','Eb','F','G'],'Db':['Db','Eb','F','Gb','Ab','Bb','C']
     };
 
-    // Precarica voci
     this.loadVoices();
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
@@ -327,14 +324,12 @@ class IntervalTrainerApp{
     this.voices = window.speechSynthesis.getVoices();
   }
 
-  // --- WAKE LOCK ---
   async keepScreenAwake(){
     try {
       if ('wakeLock' in navigator) {
         this.wakeLock = await navigator.wakeLock.request('screen');
-        console.log('Wake Lock attivo: schermo sempre acceso.');
       }
-    } catch (err) { console.log('Wake Lock fallito:', err); }
+    } catch (err) { console.log('Wake Lock error:', err); }
   }
   releaseScreen(){
     if (this.wakeLock) { this.wakeLock.release().then(() => { this.wakeLock = null; }); }
@@ -344,7 +339,6 @@ class IntervalTrainerApp{
     const qs=(id)=>document.getElementById(id);
     qs('scaleSelect').addEventListener('change',e=>this.selectedScale=e.target.value);
     
-    // Gestione Toggle + Warning iOS
     qs('ttsCheckbox').addEventListener('change',e=>{ 
         this.useTTS = e.target.checked; 
         const warn = document.getElementById('ttsWarning');
@@ -358,13 +352,12 @@ class IntervalTrainerApp{
         }
     });
 
-    // Test Voce
     qs('testVoiceBtn').addEventListener('click', () => {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance("Prova voce. Uno, due, tre.");
         u.lang = 'it-IT';
         if(!this.isIOS) {
-             const itVoice = this.voices.find(v => v.lang.includes('it-IT')) || this.voices.find(v => v.lang.includes('it'));
+             const itVoice = this.voices.find(v => v.lang.includes('it-IT') || v.lang.includes('it'));
              if(itVoice) u.voice = itVoice;
         }
         window.speechSynthesis.speak(u);
@@ -644,9 +637,46 @@ class IntervalTrainerApp{
   evaluateAnswer(detected){
     const expected=this.scales[this.currentScale][this.currentDegree];
     const ok=this.notesMatch(detected,expected);
+    
+    // NUOVO: Feedback Sonoro (Bip)
+    this.playSound(ok ? 'correct' : 'wrong');
+
     if(ok){ this.correctAnswers++; this.showResult(true,detected,expected); }
     else { this.showResult(false,detected,expected); }
   }
+  
+  // NUOVO: Generatore di suoni
+  playSound(type) {
+    if (!this.audioContext) return;
+    try {
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+
+        const now = this.audioContext.currentTime;
+        if (type === 'correct') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+    } catch(e) { console.warn("Audio feedback error", e); }
+  }
+
   notesMatch(a,b){
     if(!a||!b) return false; if(a===b) return true;
     const enh={'C#':'Db','Db':'C#','D#':'Eb','Eb':'D#','F#':'Gb','Gb':'F#','G#':'Ab','Ab':'G#','A#':'Bb','Bb':'A#','E#':'F','F':'E#','B#':'C','C':'B#'};
@@ -725,10 +755,9 @@ class IntervalTrainerApp{
     this.show('quizScreen'); 
     await this.keepScreenAwake();
     
-    // FIX IOS CRUCIALE: Sblocca audio immediatamente al click
+    // FIX IOS CRUCIALE: Sblocca audio TTS
     if(this.useTTS) {
         window.speechSynthesis.cancel();
-        // Diciamo "Iniziamo" per forzare l'attivazione audio PRIMA dell'async
         this.currentUtterance = new SpeechSynthesisUtterance("Iniziamo");
         this.currentUtterance.lang = 'it-IT';
         if(!this.isIOS) {
@@ -817,7 +846,7 @@ class IntervalTrainerApp{
     this.currentUtterance.lang = 'it-IT';
     this.currentUtterance.rate = 1.0; 
 
-    // Selezione forzata SOLO se non siamo su iOS (iOS gestisce meglio in automatico)
+    // Selezione forzata SOLO se non siamo su iOS
     if(!this.isIOS) {
         const itVoice = this.voices.find(v => v.lang.includes('it-IT') || v.lang.includes('it_IT')) || this.voices.find(v => v.lang.includes('it'));
         if(itVoice) this.currentUtterance.voice = itVoice;
@@ -834,7 +863,7 @@ class IntervalTrainerApp{
 
 document.addEventListener('DOMContentLoaded',()=>{
   console.log(`🚀 Scale Degree Trainer ${APP_VERSION}`);
-  document.getElementById('versionBadge').textContent=`${APP_VERSION} • iOS Fix Sync`;
+  document.getElementById('versionBadge').textContent=`${APP_VERSION} • Sound FX`;
   window.app=new IntervalTrainerApp();
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
