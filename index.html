@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1a2e">
-<title>Scale Degree Trainer - Piano v6.9.13</title>
+<title>Scale Degree Trainer - Piano v6.9.14</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--primary-color:#4a90e2;--secondary-color:#7b68ee;--success-color:#4caf50;--error-color:#f44336;--bg-dark:#1a1a2e;--bg-card:#16213e;--text-primary:#fff;--text-secondary:#a0a0a0}
@@ -102,7 +102,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 <div class="container">
   <div id="setupScreen" class="screen active">
     <h1>🎹 Scale Degree Trainer</h1>
-    <div class="version-badge" id="versionBadge">v6.9.13 • Sound FX</div>
+    <div class="version-badge" id="versionBadge">v6.9.14 • Loop Fix</div>
     <p class="subtitle">Impara i gradi delle scale maggiori</p>
 
     <div class="setup-section">
@@ -263,7 +263,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 </div>
 
 <script>
-const APP_VERSION='v6.9.13';
+const APP_VERSION='v6.9.14';
 
 class IntervalTrainerApp{
   constructor(){
@@ -808,7 +808,10 @@ class IntervalTrainerApp{
   }
 
   generateQuestion(){
-    this.noteStabilityBuffer=[]; this.currentSilenceFrames=0; this.readyForNextNote=true; this.isCapturing=false;
+    this.noteStabilityBuffer=[];
+    this.currentSilenceFrames=0;
+    this.readyForNextNote=false; // <-- FIX APPLICATO QUI
+    this.isCapturing=false;
     document.getElementById('resultCard').style.display='none';
     document.getElementById('statusText').textContent='In ascolto...';
     document.getElementById('volumeDot').classList.remove('active');
@@ -863,7 +866,7 @@ class IntervalTrainerApp{
 
 document.addEventListener('DOMContentLoaded',()=>{
   console.log(`🚀 Scale Degree Trainer ${APP_VERSION}`);
-  document.getElementById('versionBadge').textContent=`${APP_VERSION} • Sound FX`;
+  document.getElementById('versionBadge').textContent=`${APP_VERSION} • Loop Fix`;
   window.app=new IntervalTrainerApp();
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
