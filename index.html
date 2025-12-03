@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1a2e">
-<title>Scale Degree Trainer - Piano v6.9.16</title>
+<title>Scale Degree Trainer - Piano v6.9.18</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--primary-color:#4a90e2;--secondary-color:#7b68ee;--success-color:#4caf50;--error-color:#f44336;--bg-dark:#1a1a2e;--bg-card:#16213e;--text-primary:#fff;--text-secondary:#a0a0a0}
@@ -50,7 +50,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 .question-card{background:var(--bg-card);border-radius:16px;padding:24px;margin-bottom:16px;text-align:center}
 .scale-display{color:var(--text-secondary);font-size:1.1rem;margin-bottom:12px}
 .degree-question{font-size:2.6rem;font-weight:700;color:var(--primary-color);margin:16px 0}
-.status-indicator{display:flex;align-items:center;justify-content:center;gap:12px;padding:16px;background:rgba(74,144,226,.1);border-radius:12px;margin-bottom:16px; transition: opacity 0.3s;}
+.status-indicator{display:flex;align-items:center;justify-content:center;gap:12px;padding:16px;background:rgba(74,144,226,.1);border-radius:12px;margin-bottom:16px; transition: background 0.3s;}
+.status-indicator.waiting { background: rgba(244, 67, 54, 0.15); }
 .volume-dot{width:18px;height:18px;border-radius:50%;background:var(--text-secondary);transition:.3s}
 .volume-dot.active{background:var(--success-color);box-shadow:0 0 18px var(--success-color)}
 .status-text{font-size:1rem;color:var(--text-secondary)}
@@ -102,7 +103,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 <div class="container">
   <div id="setupScreen" class="screen active">
     <h1>🎹 Scale Degree Trainer</h1>
-    <div class="version-badge" id="versionBadge">v6.9.16 • Delay Sync</div>
+    <div class="version-badge" id="versionBadge">v6.9.18 • Lockout Fix</div>
     <p class="subtitle">Impara i gradi delle scale maggiori</p>
 
     <div class="setup-section">
@@ -229,7 +230,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
       <div class="degree-question" id="degreeQuestion">III</div>
     </div>
 
-    <div class="status-indicator">
+    <div class="status-indicator" id="statusIndicatorBox">
       <div class="volume-dot" id="volumeDot"></div>
       <div class="status-text" id="statusText">In ascolto...</div>
     </div>
@@ -263,7 +264,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubunt
 </div>
 
 <script>
-const APP_VERSION='v6.9.16';
+const APP_VERSION='v6.9.18';
 
 class IntervalTrainerApp{
   constructor(){
@@ -271,8 +272,10 @@ class IntervalTrainerApp{
     this.currentQuestion=0; this.totalQuestions=30; this.correctAnswers=0;
     this.currentDegree=null; this.currentScale=null; this.lastDegree=null;
     
-    // Logic Lock
-    this.ignoreInputUntil = 0; // Timestamp blocco input
+    // Logic Locks
+    this.waitingForSilence = false; 
+    this.silenceCounter = 0;
+    this.isProcessingResult = false; // NUOVO LOCK ASSOLUTO
 
     // TTS
     this.useTTS = false;
@@ -463,8 +466,8 @@ class IntervalTrainerApp{
   }
 
   processAudioBlock(buffer,sampleRate,isCalibration){
-    // FIX HARD: Ignora tutto se siamo nel periodo di "cecità" post-domanda
-    if(Date.now() < this.ignoreInputUntil && !isCalibration) return;
+    // LOCKOUT 1: Se stiamo mostrando il risultato, IGNORA TUTTO
+    if(this.isProcessingResult && !isCalibration) return;
 
     if(this.isSpeaking && !isCalibration) return;
 
@@ -488,14 +491,31 @@ class IntervalTrainerApp{
 
     if(!this.warmupReady()) return;
 
+    // LOCKOUT 2: Silence Gate
+    if(this.waitingForSilence && !isCalibration) {
+        if(rms > this.volumeThreshold * 0.8) { 
+            this.silenceCounter = 0;
+            return; 
+        }
+        this.silenceCounter++;
+        if(this.silenceCounter > 20) { // Aumentato a 20 per sicurezza
+            this.waitingForSilence = false; 
+            this.readyForNextNote = true;
+            this.updateStatus("In ascolto...", false);
+        }
+        return; 
+    }
+
     const silenceThreshold=this.volumeThreshold*0.5;
     if(rms<silenceThreshold){
       this.currentSilenceFrames++;
       if(this.currentSilenceFrames>=this.silenceFramesRequired){
-        this.readyForNextNote=true;
-        const dot=isCalibration?document.getElementById('calibrationVolumeDot'):document.getElementById('volumeDot');
-        if(dot) dot.classList.remove('active');
-        if(isCalibration){ const s=document.getElementById('calibrationStatus'); if(s) s.textContent='Suona una nota per testare...'; }
+        if(!this.waitingForSilence) {
+             this.readyForNextNote=true;
+             const dot=isCalibration?document.getElementById('calibrationVolumeDot'):document.getElementById('volumeDot');
+             if(dot) dot.classList.remove('active');
+             if(isCalibration){ const s=document.getElementById('calibrationStatus'); if(s) s.textContent='Suona una nota per testare...'; }
+        }
       }
       return;
     }else{
@@ -550,8 +570,7 @@ class IntervalTrainerApp{
   }
 
   detectPitch(){
-    // FIX HARD: Ignora tutto se siamo nel periodo di "cecità" post-domanda
-    if(Date.now() < this.ignoreInputUntil) {
+    if(this.isProcessingResult) {
         requestAnimationFrame(()=>this.detectPitch());
         return;
     }
@@ -564,6 +583,23 @@ class IntervalTrainerApp{
     if(!this.isListening || this.useScriptNode) return;
     this.analyser.getFloatTimeDomainData(this.dataArray);
     const rms=this.computeRms(this.dataArray); this.currentVolume=rms;
+
+    // LOCKOUT 2: Silence Gate
+    if(this.waitingForSilence) {
+        if(rms > this.volumeThreshold * 0.8) { 
+            this.silenceCounter = 0;
+            requestAnimationFrame(()=>this.detectPitch());
+            return; 
+        }
+        this.silenceCounter++;
+        if(this.silenceCounter > 20) {
+            this.waitingForSilence = false; 
+            this.readyForNextNote = true;
+            this.updateStatus("In ascolto...", false);
+        }
+        requestAnimationFrame(()=>this.detectPitch());
+        return; 
+    }
 
     if(this.preGain){
       if(rms<0.003 && this.preGain.gain.value<10){ this.preGain.gain.value=Math.min(10,this.preGain.gain.value*1.5); }
@@ -647,6 +683,9 @@ class IntervalTrainerApp{
   }
 
   evaluateAnswer(detected){
+    // ATTIVAZIONE LOCKOUT 1 (IMMEDIATA)
+    this.isProcessingResult = true; 
+
     const expected=this.scales[this.currentScale][this.currentDegree];
     const ok=this.notesMatch(detected,expected);
     
@@ -816,29 +855,34 @@ class IntervalTrainerApp{
     if(this.audioContext){ try{ this.audioContext.close(); }catch(_){} this.audioContext=null; }
   }
 
+  updateStatus(text, waiting) {
+      const box = document.getElementById('statusIndicatorBox');
+      const txt = document.getElementById('statusText');
+      if(box) {
+          if(waiting) box.classList.add('waiting');
+          else box.classList.remove('waiting');
+      }
+      if(txt) txt.textContent = text;
+  }
+
   generateQuestion(){
+    // RESETTA TUTTO QUANDO SI PASSA ALLA NUOVA DOMANDA
     this.noteStabilityBuffer=[];
     this.currentSilenceFrames=0;
     this.readyForNextNote=false; 
     this.isCapturing=false;
+    
+    // Disattiva il Lockout 1 (sblocco per la fase 2)
+    this.isProcessingResult = false; 
+
+    // Attiva il Lockout 2 (Silence Gate)
+    this.waitingForSilence = true;
+    this.silenceCounter = 0;
+    this.updateStatus("Rilascia nota...", true);
+    
     document.getElementById('resultCard').style.display='none';
+    document.getElementById('volumeDot').classList.remove('active');
     
-    // HARD FIX APPLICATO QUI:
-    this.ignoreInputUntil = Date.now() + 1500; 
-    
-    // Feedback visivo
-    const status = document.getElementById('statusText');
-    const dot = document.getElementById('volumeDot');
-    status.textContent = "Attendi...";
-    status.style.opacity = "0.5";
-    dot.style.opacity = "0.2";
-
-    setTimeout(() => {
-        status.textContent = "In ascolto...";
-        status.style.opacity = "1";
-        dot.style.opacity = "1";
-    }, 1500);
-
     if(this.selectedScale==='RANDOM'){ const keys=Object.keys(this.scales); this.currentScale=keys[Math.floor(Math.random()*keys.length)]; } else { this.currentScale=this.selectedScale; }
     let d; do{ d=Math.floor(Math.random()*7); }while(d===this.lastDegree); this.lastDegree=d; this.currentDegree=d;
     document.getElementById('scaleDisplay').textContent=`${this.currentScale} Maggiore`;
@@ -888,7 +932,7 @@ class IntervalTrainerApp{
 
 document.addEventListener('DOMContentLoaded',()=>{
   console.log(`🚀 Scale Degree Trainer ${APP_VERSION}`);
-  document.getElementById('versionBadge').textContent=`${APP_VERSION} • Delay Sync`;
+  document.getElementById('versionBadge').textContent=`${APP_VERSION} • Lockout Fix`;
   window.app=new IntervalTrainerApp();
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
